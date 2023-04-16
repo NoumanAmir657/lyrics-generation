@@ -1,5 +1,6 @@
 import re
 import torch
+import torch.nn.functional as F
 
 def read_and_clean_dataset(dataset_path):
     with open(dataset_path) as f:
@@ -22,63 +23,63 @@ def create_stoi_mapping(vocab):
 def create_itos_mapping(stoi):
    return {i:s for s,i in stoi.items()}
 
-def generate_bigrams(words, N):
-    window_size = 1
-    words_with_dot_token = (['.'] * window_size) + words + ['.']
-    words_temp = words_with_dot_token[window_size:]
-
-    for i,w in enumerate(words_temp):
-        i += window_size
-        context = words_with_dot_token[i-window_size:i]
-        target = w
-    
-        N[stoi[context[0]], stoi[target]] += 1
-
-def get_loss(words, P):
+def generate_inputs_targets(words, stoi):
     window_size = 1
     words_with_dot_token = (['.'] * window_size) + words + ['.']
     words_temp = words_with_dot_token[window_size:]
     
-    n = 0
-    nlls = 0
+    inputs = []
+    outputs = []
     for i,w in enumerate(words_temp):
         i += window_size
-        context = words_with_dot_token[i-window_size:i]
-        target = w
+        inputs.append(stoi[words[i-window_size:i][0]])
+        outputs.append(stoi[w])
 
-        probability = P[stoi[context[0]], stoi[target]]
-        log_probability = torch.log(probability)
-        nll = -log_probability
-        nlls += nll
-        n += 1
-    return (nlls / n).item()
+    return torch.tensor(inputs), torch.tensor(outputs)
 
-def generate_lyrics(P, itos):
+def generate_lyrics(W):
     g = torch.Generator().manual_seed(2147483647)
-    for _ in range(5):
+
+    for _ in range(1):
         out = []
         ix = 0
         while True:
-            p = P[ix]
+            x_one_hot = F.one_hot(torch.tensor([ix]), num_classes=vocab_size).float()
+            logits = x_one_hot @ W
+            counts = logits.exp()
+            p = counts / counts.sum(1, keepdims=True)
+        
             ix = torch.multinomial(p, num_samples=1, replacement=True, generator=g).item()
             out.append(itos[ix])
             if ix == 0:
                 break
-    print(' '.join(out) + '\n\n\n')
+            print(' '.join(out) + '\n')
+
 
 text, words, vocab, vocab_size = read_and_clean_dataset("lyrics.txt")
 
 stoi = create_stoi_mapping(vocab)
 itos = create_itos_mapping(stoi)
 
-N = torch.zeros((vocab_size, vocab_size), dtype=torch.int32)
+x, y = generate_inputs_targets(words, stoi)
 
-generate_bigrams(words, N)
+x_one_hot = F.one_hot(x, num_classes=vocab_size).float()
 
-P = (N+1).float()
-P /= P.sum(1, keepdims=True)
+g = torch.Generator().manual_seed(2147483647)
+W = torch.randn((vocab_size, vocab_size), generator=g, requires_grad=True)
 
-loss = get_loss(words, P)
-print(f'NLL = {loss:.8f}')
+for k in range(1000):  
+  logits = x_one_hot @ W
+  counts = logits.exp()
+  probs = counts / counts.sum(1, keepdims=True)
+  loss = -probs[torch.arange(x.shape[0]), y].log().mean() + 0.01*(W**2).mean()
 
-generate_lyrics(P, itos)
+  if (k % 100) == 0:
+    print(loss.item())
+  
+  W.grad = None
+  loss.backward()
+  
+  W.data += -50 * W.grad
+
+generate_lyrics(W)
