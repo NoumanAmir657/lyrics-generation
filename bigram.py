@@ -22,7 +22,7 @@ def create_stoi_mapping(vocab):
 def create_itos_mapping(stoi):
    return {i:s for s,i in stoi.items()}
 
-def generate_bigrams(words, N):
+def generate_bigrams(words, N, stoi):
     window_size = 1
     words_with_dot_token = (['.'] * window_size) + words + ['.']
     words_temp = words_with_dot_token[window_size:]
@@ -73,7 +73,7 @@ itos = create_itos_mapping(stoi)
 
 N = torch.zeros((vocab_size, vocab_size), dtype=torch.int32)
 
-generate_bigrams(words, N)
+generate_bigrams(words, N, stoi)
 
 P = (N+1).float()
 P /= P.sum(1, keepdims=True)
