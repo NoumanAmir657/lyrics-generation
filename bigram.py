@@ -66,7 +66,7 @@ def generate_lyrics(P, itos):
                 break
     print(' '.join(out) + '\n\n\n')
 
-text, words, vocab, vocab_size = read_and_clean_dataset("lyrics/ts_lyrics.txt")
+text, words, vocab, vocab_size = read_and_clean_dataset("lyrics/lyrics.txt")
 
 stoi = create_stoi_mapping(vocab)
 itos = create_itos_mapping(stoi)
