@@ -1,3 +1,6 @@
+import sys
+sys.path.insert(0, './model')
+
 from imports import *
 import re
 import GPT
