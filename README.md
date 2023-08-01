@@ -11,7 +11,7 @@ The project aims to generate lyrics when provided a prompt to it. Transformer is
 python3 main.py
 ```
 ## Demo
-For demo you can use the <b>Demo.ipynb</b> notebook
+For demo you can use the <i>Demo.ipynb</i> notebook
 
 ## References
 [Attention Is All You Need](https://arxiv.org/abs/1706.03762)
