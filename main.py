@@ -4,7 +4,7 @@ import GPT
 
 torch.manual_seed(1337)
 
-with open('lyrics/lyrics.txt', 'r', encoding='utf-8') as f:
+with open('lyrics/dataset.txt', 'r', encoding='utf-8') as f:
     text = f.read()[:200]
     text = text.lower().replace('\n', ' \n ')
     text = re.sub(r'[^\w\s]', '', text)
